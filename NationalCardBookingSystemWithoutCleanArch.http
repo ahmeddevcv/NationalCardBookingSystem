@@ -1,0 +1,6 @@
+@NationalCardBookingSystemWithoutCleanArch_HostAddress = http://localhost:5224
+
+GET {{NationalCardBookingSystemWithoutCleanArch_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
