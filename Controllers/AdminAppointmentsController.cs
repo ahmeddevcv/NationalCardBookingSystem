@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NationalCardBookingSystemWithoutCleanArch.Data;
 using NationalCardBookingSystemWithoutCleanArch.Models;

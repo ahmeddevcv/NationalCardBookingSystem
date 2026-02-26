@@ -46,19 +46,37 @@ namespace NationalCardBookingSystemWithoutCleanArch.Controllers
             var members = await _userService.GetFamilyMembersAsync(userId);
             return Ok(members);
         }
+        // 2️ Get Family Member by id
+        [HttpGet("family-members/{id}")]
+        public async Task<IActionResult> GetFamilyMemberById(int id)
+        {
+            var userId = GetUserId();
+            var member = await _userService.GetFamilyMemberByIdAsync(userId, id);
+
+            if (member == null)
+                return NotFound("Family member not found");
+
+            return Ok(member);
+        }
 
         // 3️ Update Family Member
         [HttpPut("family-members/{id}")]
-        public async Task<IActionResult> UpdateFamilyMember(int id, [FromBody] FamilyMemberDto dto)
+        public async Task<IActionResult> UpdateFamilyMember(int id, [FromBody] UpdateFamilyMemberDto dto)
         {
             var userId = GetUserId();
             try
             {
-                await _userService.UpdateFamilyMemberAsync(userId, id, dto);
-                return Ok("Family member updated");
+                var updated = await _userService.UpdateFamilyMemberAsync(userId, id, dto);
+
+                if (updated)
+                    return Ok("Family member updated");
+                else
+                    return Ok("No changes detected");
             }
-            catch (KeyNotFoundException) 
-            { return NotFound("Family member not found"); }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Family member not found");
+            }
         }
 
         // 4️ Delete Family Member
@@ -74,5 +92,6 @@ namespace NationalCardBookingSystemWithoutCleanArch.Controllers
             catch (KeyNotFoundException) 
             { return NotFound("Family member not found"); }
         }
+
     }
 }

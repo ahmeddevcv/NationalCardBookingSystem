@@ -40,7 +40,7 @@ namespace NationalCardBookingSystemWithoutCleanArch.Controllers
                 throw new UnauthorizedAccessException("Invalid or missing User ID claim");
 
             return userId;
-        }        
+        }
 
         // for Test Notification
         [HttpPost("test-notification")]
@@ -48,11 +48,25 @@ namespace NationalCardBookingSystemWithoutCleanArch.Controllers
         {
             var userId = GetUserId();
 
-            await _hub.Clients.User(userId.ToString())
-                .SendAsync("ReceiveNotification", "📢 إشعار تجريبي من السيرفر");
+            var notifications = new List<string>
+    {
+        "📢 إشعار 1: مرحباً بك!",
+        "📢 إشعار 2: لديك رسالة جديدة",
+        "📢 إشعار 3: تم تحديث بياناتك",
+        "📢 إشعار 4: موعد الاجتماع غداً الساعة 10 صباحاً"
+    };
 
-            return Ok("Notification sent");
+            foreach (var note in notifications)
+            {
+                await _hub.Clients.User(userId.ToString())
+                    .SendAsync("ReceiveNotification", note);
+            }
+
+            return Ok("Notifications sent");
         }
+
+
+
 
 
         // 1️ Manual booking execution

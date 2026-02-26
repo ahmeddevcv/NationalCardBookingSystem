@@ -9,10 +9,11 @@ using NationalCardBookingSystemWithoutCleanArch.Data;
 using NationalCardBookingSystemWithoutCleanArch.DTOs;
 using NationalCardBookingSystemWithoutCleanArch.Helpers;
 using NationalCardBookingSystemWithoutCleanArch.Hubs;
+using NationalCardBookingSystemWithoutCleanArch.Models;
 using NationalCardBookingSystemWithoutCleanArch.Repositories;
 using NationalCardBookingSystemWithoutCleanArch.Services;
-using System.Text;
 using Serilog;
+using System.Text;
 
 namespace NationalCardBookingSystemWithoutCleanArch
 {
@@ -54,6 +55,7 @@ namespace NationalCardBookingSystemWithoutCleanArch
             {
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -65,6 +67,24 @@ namespace NationalCardBookingSystemWithoutCleanArch
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ClockSkew = TimeSpan.Zero
+                };
+
+                // ?????? ??? ??? ?? SignalR
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/notificationHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -82,6 +102,18 @@ namespace NationalCardBookingSystemWithoutCleanArch
             // =====================
             //builder.Services.AddSignalR();
 
+            // ????? ???? CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    policy => policy
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .SetIsOriginAllowed(_ => true));
+            });
+
+
             // for notifications, we can use SignalR to push real-time updates to clients when appointment availability changes or when a booking is confirmed.
             builder.Services.AddSignalR(options =>
             {
@@ -89,6 +121,9 @@ namespace NationalCardBookingSystemWithoutCleanArch
             });
 
             builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+
+
+
 
 
             // =====================
@@ -135,6 +170,16 @@ namespace NationalCardBookingSystemWithoutCleanArch
 
             var app = builder.Build();
 
+            #region seed date
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                SeedLargeData.Initialize(context);
+            }
+            #endregion
+
+
+            app.UseCors("AllowAll");
             // =====================
             // 7? Middlewares
             // =====================
@@ -144,7 +189,6 @@ namespace NationalCardBookingSystemWithoutCleanArch
                 app.UseSwaggerUI();
             }
 
-
             app.UseHttpsRedirection();
 
             // Hangfire Dashboard
@@ -153,6 +197,7 @@ namespace NationalCardBookingSystemWithoutCleanArch
             // Authentication & Authorization
             app.UseAuthentication();
             app.UseAuthorization();
+
             app.Use(async (context, next) =>
             {
                 try
@@ -167,7 +212,11 @@ namespace NationalCardBookingSystemWithoutCleanArch
             });
 
             // =====================
-            // 8? Map Endpoints
+            // ????? CORS ??? ??? ?? Map
+            // =====================
+
+            // =====================
+            // Map Endpoints
             // =====================
             app.MapControllers();
 
@@ -175,7 +224,7 @@ namespace NationalCardBookingSystemWithoutCleanArch
             app.MapHub<NotificationHub>("/notificationHub");
 
             // =====================
-            // 9? Schedule Hangfire Job
+            // Schedule Hangfire Job
             // =====================
             using (var scope = app.Services.CreateScope())
             {
@@ -188,17 +237,13 @@ namespace NationalCardBookingSystemWithoutCleanArch
                 );
             }
 
-
+            app.Run();
 
 
 
             //app.UseHttpsRedirection();
             //app.UseAuthorization();
             //app.MapControllers();
-
-
-
-            app.Run();
         }
     }
 }

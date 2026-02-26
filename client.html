@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalR Notification Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+</head>
+<body>
+    <h2>Notifications</h2>
+    <div id="messages"></div>
+
+    <script>
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUxIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbW9iaWxlcGhvbmUiOiIwNzMxNjg0OTYzMyIsImV4cCI6MTc3MjEwOTM0OCwiaXNzIjoiTmF0aW9uYWxDYXJkQm9va2luZ1N5c3RlbSIsImF1ZCI6Ik5hdGlvbmFsQ2FyZFVzZXJzIn0.R96L1_Q1huWUFbWvlh5rl6z8Q8_OdXcL0j-lwgxD7yA";
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7171/notificationHub", {
+                accessTokenFactory: () => token
+            })
+            .build();
+
+        // استقبال الرسالة من السيرفر
+        connection.on("ReceiveNotification", (message) => {
+            console.log("Notification: ", message);
+            document.getElementById("messages").innerHTML += `<p>${message}</p>`;
+        });
+
+        // تشغيل الاتصال
+        connection.start()
+            .then(() => console.log("Connected to Hub"))
+            .catch(err => console.error("Connection failed: ", err));
+    </script>
+
+
+
+
+</body>
+</html>

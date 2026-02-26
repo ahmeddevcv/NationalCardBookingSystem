@@ -36,28 +36,62 @@ namespace NationalCardBookingSystemWithoutCleanArch.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<FamilyMember>> GetFamilyMembersAsync(int userId)
+        public async Task<List<FamilyMemberDto>> GetFamilyMembersAsync(int userId)
         {
             return await _context.FamilyMembers
                 .Where(x => x.UserId == userId)
                 .AsNoTracking()
+                .Select(x => new FamilyMemberDto
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    NationalId = x.NationalId,
+                    BirthDate = x.BirthDate,
+                    TransactionType = x.TransactionType
+                })
                 .ToListAsync();
         }
 
-        public async Task UpdateFamilyMemberAsync(int userId, int memberId, FamilyMemberDto dto)
+        public async Task<bool> UpdateFamilyMemberAsync(int userId, int memberId, UpdateFamilyMemberDto dto)
         {
             var member = await _context.FamilyMembers
                 .FirstOrDefaultAsync(x => x.Id == memberId && x.UserId == userId);
 
             if (member == null)
                 throw new KeyNotFoundException("Family member not found");
-            member.FullName = dto.FullName;
-            member.NationalId = dto.NationalId;
-            member.BirthDate = dto.BirthDate;
-            member.TransactionType = dto.TransactionType;
+            bool isModified = false;
 
-            await _context.SaveChangesAsync();
+
+            if (dto.FullName != null && member.FullName != dto.FullName)
+            {
+                member.FullName = dto.FullName;
+                isModified = true;
+            }
+
+            if (dto.NationalId != null && member.NationalId != dto.NationalId)
+            {
+                member.NationalId = dto.NationalId;
+                isModified = true;
+            }
+
+            if (dto.BirthDate.HasValue && member.BirthDate != dto.BirthDate.Value)
+            {
+                member.BirthDate = dto.BirthDate.Value;
+                isModified = true;
+            }
+
+            if (dto.TransactionType != null && member.TransactionType != dto.TransactionType)
+            {
+                member.TransactionType = dto.TransactionType;
+                isModified = true;
+            }
+
+            if (isModified)
+                await _context.SaveChangesAsync();
+
+             return isModified;
         }
+
 
         public async Task DeleteFamilyMemberAsync(int userId, int memberId)
         {
@@ -70,6 +104,25 @@ namespace NationalCardBookingSystemWithoutCleanArch.Services
             _context.FamilyMembers.Remove(member);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<FamilyMemberDto?> GetFamilyMemberByIdAsync(int userId, int memberId)
+        {
+            return await _context.FamilyMembers
+                .AsNoTracking()
+                .Where(x => x.Id == memberId && x.UserId == userId)
+                .Select(x => new FamilyMemberDto
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    NationalId = x.NationalId,
+                    BirthDate = x.BirthDate,
+                    TransactionType = x.TransactionType
+                })
+                .FirstOrDefaultAsync();
+        }
+
+
+
     }
 
 }
